@@ -232,5 +232,3 @@ sudo containerlab destroy --topo frr_switch_router_topology.yaml
 - I PC possono comunicare con il router.
 - Il router instrada correttamente i pacchetti tra i dispositivi.
 ```
-
-Fammi sapere se hai bisogno di modifiche o aggiunte!
