@@ -1,220 +1,64 @@
 # NetworkingLabWithContainer
-Lab di Networking con ContainerLab
+# Installazione di Containerlab
 
-# Containerlab: Esercizi di Rete
+Containerlab è uno strumento che consente di creare topologie di rete containerizzate con semplicità. Utilizza container Docker per simulare dispositivi di rete, come router e switch.
 
-## Esercizio 1: Topologia con due router FRR
+## Requisiti
 
-### 1. Eliminazione della topologia precedente
-Assicurarsi di eliminare la topologia precedente:
+- Docker (installato e configurato correttamente)
+- Sistema operativo Linux
+
+## Passaggi di Installazione
+
+### 1. Installazione di Containerlab
+
+Esegui il comando seguente per installare Containerlab utilizzando uno script Bash ufficiale:
 ```bash
-sudo containerlab destroy --topo frr_router_topology.yaml
-docker ps -a
-docker rm -f $(docker ps -a -q -f name=clab-)
+sudo bash -c "$(curl -L https://get.containerlab.dev)"
 ```
 
-### 2. Nuovo file di configurazione: `frr_router_topology.yaml`
-```yaml
-name: frr-router-topology
+Oppure puoi installarlo manualmente seguendo i passaggi indicati nella [documentazione ufficiale](https://containerlab.dev).
 
-topology:
-  nodes:
-    r1:
-      kind: linux
-      image: frrouting/frr:latest
-      exec:
-        - sysctl -w net.ipv4.ip_forward=1
-    r2:
-      kind: linux
-      image: frrouting/frr:latest
-      exec:
-        - sysctl -w net.ipv4.ip_forward=1
+### 2. Verifica dell'Installazione
 
-  links:
-    - endpoints: ["r1:eth1", "r2:eth1"]
-```
-
-### 3. Avvio della topologia
+Controlla che Containerlab sia stato installato correttamente:
 ```bash
-sudo containerlab deploy --topo frr_router_topology.yaml
+containerlab version
 ```
 
-### 4. Configurazione dei router
-- Configurazione R1:
+### 3. Installazione di Docker
+
+Se non hai già Docker installato, esegui i seguenti comandi per installarlo su una distribuzione basata su Debian/Ubuntu:
 ```bash
-sudo docker exec -it clab-frr-router-topology-r1 /bin/sh
-mkdir -p /etc/frr
-echo "service integrated-vtysh-config" > /etc/frr/vtysh.conf
-ip addr add 192.168.1.1/24 dev eth1
-ip link set eth1 up
-ip addr show eth1
-```
-- Configurazione R2:
-```bash
-sudo docker exec -it clab-frr-router-topology-r2 /bin/sh
-mkdir -p /etc/frr
-echo "service integrated-vtysh-config" > /etc/frr/vtysh.conf
-ip addr add 192.168.1.2/24 dev eth1
-ip link set eth1 up
-ip addr show eth1
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl enable docker
+sudo systemctl start docker
 ```
 
-### 5. Verifica della connettività
+### 4. Aggiunta dell'utente al gruppo Docker (opzionale)
+
+Per evitare di usare `sudo` con Docker:
 ```bash
-sudo docker exec -it clab-frr-router-topology-r1 ping 192.168.1.2
-sudo docker exec -it clab-frr-router-topology-r2 ping 192.168.1.1
+sudo usermod -aG docker $USER
 ```
+Dopo aver eseguito il comando, disconnettiti e riconnettiti per applicare le modifiche.
+
+### 5. Test di Containerlab
+
+Esegui un semplice test per verificare il funzionamento:
+```bash
+containerlab deploy --help
+```
+
+## Link al progetto
+
+Puoi trovare ulteriori informazioni e la documentazione completa nel repository ufficiale su GitHub:
+[Containerlab su GitHub](https://github.com/srl-labs/containerlab)
+
+## Risoluzione dei Problemi
+
+Se riscontri problemi durante l'installazione o l'uso, consulta la [documentazione ufficiale](https://containerlab.dev) o apri una issue nel [repository GitHub](https://github.com/srl-labs/containerlab/issues).
 
 ---
-
-## Esercizio 2: Topologia con Router e PC
-
-### 1. Eliminazione della topologia precedente
-```bash
-sudo containerlab destroy --topo frr_pc_topology.yaml
-```
-
-### 2. Nuovo file di configurazione: `frr_pc_topology.yaml`
-```yaml
-name: frr-pc-topology
-
-topology:
-  nodes:
-    r1:
-      kind: linux
-      image: frrouting/frr:latest
-    pc1:
-      kind: linux
-      image: alpine:latest
-
-  links:
-    - endpoints: ["r1:eth1", "pc1:eth1"]
-```
-
-### 3. Avvio della topologia
-```bash
-sudo containerlab deploy --topo frr_pc_topology.yaml
-```
-
-### 4. Configurazione dei dispositivi
-- Configurazione R1:
-```bash
-sudo docker exec -it clab-frr-pc-topology-r1 /bin/sh
-ip addr add 192.168.1.1/24 dev eth1
-ip link set eth1 up
-```
-- Configurazione PC1:
-```bash
-sudo docker exec -it clab-frr-pc-topology-pc1 /bin/sh
-ip addr add 192.168.1.2/24 dev eth1
-ip link set eth1 up
-ip route add default via 192.168.1.1
-```
-
-### 5. Verifica della connettività
-```bash
-sudo docker exec -it clab-frr-pc-topology-r1 ping 192.168.1.2
-sudo docker exec -it clab-frr-pc-topology-pc1 ping 192.168.1.1
-```
-
----
-
-## Esercizio 3: Topologia PC1 ↔ R1 ↔ R2 ↔ PC2
-
-### 1. Eliminazione della topologia precedente
-```bash
-sudo containerlab destroy --topo frr_dual_router_topology.yaml
-docker ps -a
-docker rm -f $(docker ps -a -q -f name=clab-)
-```
-
-### 2. Configurazione: `frr_dual_router_topology.yaml`
-```yaml
-name: frr-dual-router-topology
-
-topology:
-  nodes:
-    r1:
-      kind: linux
-      image: frrouting/frr:latest
-    r2:
-      kind: linux
-      image: frrouting/frr:latest
-    pc1:
-      kind: linux
-      image: alpine:latest
-    pc2:
-      kind: linux
-      image: alpine:latest
-
-  links:
-    - endpoints: ["r1:eth1", "pc1:eth1"]
-    - endpoints: ["r2:eth1", "pc2:eth1"]
-    - endpoints: ["r1:eth2", "r2:eth2"]
-```
-
-### 3. Avvio della topologia
-```bash
-sudo containerlab deploy --topo frr_dual_router_topology.yaml
-```
-
-### 4. Configurazione Router R1 e R2
-- R1:
-```bash
-sudo docker exec -it clab-frr-dual-router-topology-r1 vtysh
-conf t
-interface eth1
- ip address 192.168.1.1/24
-!
-interface eth2
- ip address 10.0.0.1/24
-!
-ip route 192.168.2.0/24 10.0.0.2
-end
-write
-```
-- R2:
-```bash
-sudo docker exec -it clab-frr-dual-router-topology-r2 vtysh
-conf t
-interface eth1
- ip address 192.168.2.1/24
-!
-interface eth2
- ip address 10.0.0.2/24
-!
-ip route 192.168.1.0/24 10.0.0.1
-end
-write
-```
-
-### 5. Configurazione dei PC
-- PC1:
-```bash
-sudo docker exec -it clab-frr-dual-router-topology-pc1 /bin/sh
-ip addr add 192.168.1.2/24 dev eth1
-ip route add default via 192.168.1.1
-```
-- PC2:
-```bash
-sudo docker exec -it clab-frr-dual-router-topology-pc2 /bin/sh
-ip addr add 192.168.2.2/24 dev eth1
-ip route add default via 192.168.2.1
-```
-
-### 6. Verifica della connettività
-```bash
-sudo docker exec -it clab-frr-dual-router-topology-pc1 ping 192.168.2.2
-sudo docker exec -it clab-frr-dual-router-topology-pc2 ping 192.168.1.2
-```
-
-### 7. Rimozione della topologia
-```bash
-sudo containerlab destroy --topo frr_dual_router_topology.yaml
-```
-
----
-
-## Conclusioni
-Questi esercizi mostrano come configurare router FRR e container PC utilizzando Containerlab. L'abilitazione dell'IP forwarding e la corretta configurazione delle rotte sono fondamentali per garantire la connettività.
 ```
